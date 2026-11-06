@@ -1,35 +1,35 @@
-# Nexa Essentials — Price & Volume History Cockpit
+# Nexa Essentials — Price & Volume History Cockpit · Research Profile
 
-A single-file, self-contained analytics cockpit covering every SKU a consumer-goods (essentials) business unit has sold since inception — 1,000+ SKUs across ~57 months — with realised price, volume, MoM change, declared DP/TP/MRP grid, price-direction breadth and own-price elasticity.
+## 1. Abstract
+This artifact is a self-contained, dependency-free analytics cockpit for a consumer-goods (essentials) business unit that sells on the order of a thousand pack SKUs. It embeds roughly 57 months of SKU-level history as a JavaScript data object and hand-renders every figure as inline SVG, so the entire analysis opens from `file://` with no server, bundler, or charting library. It answers a linked set of commercial-pricing questions — how large the book is and when it expanded or contracted, whether prices are drifting up or down across the portfolio, how each SKU's realised price moved against the prior selling month, how far realised price sits from the declared distributor (DP), dealer (TP) and MRP grid, and how strongly each SKU's volume responds to its own price (elasticity). The deliverable is the analytical design and the visual system; all figures are structurally faithful synthetic placeholders, not real financial data.
 
-## The problem it solves
-An FMCG/essentials portfolio sells thousands of pack SKUs (rice, lentils, oil, flour, spices, snacks, beverages). Pricing drifts per SKU, some lines grow and others stall, and there was no way to answer "is price rising or falling across the book?", "how elastic is each SKU?" or "what changed when?" without a heavy BI stack.
+## 2. Problem Framing
+An essentials portfolio spans thousands of pack SKUs — staples and consumables — and pricing drifts independently per line, so some grow while others stall. Leadership and category teams had no lightweight way to answer *"is price rising or falling across the book?", "how elastic is each SKU?",* or *"what changed, when?"* without a heavy BI stack or an analyst request cycle. The cockpit exists to collapse that: one portable HTML file that takes a reader from portfolio-level revenue and breadth down to a single SKU's month-on-month journey and elasticity read, fully interactive (sort, filter, drill, hover) and viewable offline.
 
-## The solution approach
-One portable HTML file that embeds the whole dataset as a JS object and hand-renders all charts in SVG — no libraries, no server. Tabs let an analyst go from portfolio-level revenue/breadth down to a single SKU's month-on-month journey and elasticity read-out.
+## 3. Related Practice
+The views encode standard commercial-pricing and category-management techniques: **realised-vs-declared price ladders** (DP → TP → MRP, with dealer margin and retail headroom as shares of MRP), **price-direction breadth** (share of SKUs whose price rose versus fell against the previous selling month), **first-difference own-price elasticity** estimated from time-series, and **change-event logs** for declared price revisions. Each is a recognised analytical frame rather than a novel method; the contribution is assembling them into a single self-explaining, auditable artifact with explicit coverage caveats.
 
-## Key features
-- Overview: monthly net revenue bars, active-SKU count line, and price-direction breadth (share of SKUs up vs down vs flat).
-- All-SKUs: sortable/searchable table of 1,000+ SKUs with revenue, volume, first/last price and MoM change.
-- SKU month-on-month: picker + dual-axis price/volume chart + drill table.
-- Price change tracker: realised moves and declared-price change events.
-- Declared price grid: distributor (DP), trade (TP) and MRP per SKU with realised-vs-declared gap.
-- Own-price elasticity computed from log-log OLS per SKU with coverage flags.
-- Method & coverage notes documenting the clean window and data caveats.
+## 4. Methodology & Data Design
+Conceptually the data is a set of sales-order and price-config aggregates scoped to one business unit across the full window (2022-03 → 2026-11). Metric definitions:
+- **Realised price** = net value ÷ quantity, per selling unit as booked.
+- **MoM price / volume change** = versus the previous month *with sales* for that SKU (not the calendar prior month), so dormant SKUs compare to their last active period.
+- **Price-move count** = number of months with an absolute MoM move of 2% or more.
+- **Declared prices** resolve in order: channel price grid (DP = distributor channel, TP = dealer channel) → retail-price log (DP/TP/MRP) → blank; MRP comes only from the retail table.
+- **Elasticity β** = slope of Δln(volume) on Δln(realised price) between consecutive months (first-difference estimator, which removes the shared cost/season trend); reported when there are enough monthly differences and |β| ≤ 8, with the level (log-log) β shown as a cross-check and R² for fit reliability.
+- **Unit reconciliation** = where realised price ÷ MRP falls outside 0.35–1.6 the booked unit does not reconcile to the declared pack; flagged. Volumes are in each SKU's own selling unit and are never summed across SKUs.
+The shipped copy has these aggregates **randomised into synthetic placeholders** preserving structure, SKU counts and order of magnitude.
 
-## Tech stack
-- Vanilla JavaScript, zero dependencies; hand-authored SVG charts; CSS grid layout and theming.
-- Full dataset embedded as a single `const D = {...}` JSON object (monthly portfolio, per-SKU series, declared prices and change events).
+## 5. Analytical Framework
+The UI encodes a drill path from the aggregate to the individual. Overview KPIs and the breadth chart set the market direction; the All-SKUs table ranks every SKU by change-since-first, price moves and elasticity, and clicking a row deep-links into that SKU's month-on-month chart and declared grid. The elasticity view classifies each SKU — elastic (β < −1: a cut can grow revenue), inelastic (−1…0: volume is sticky) or anomalous (β > 0: import/cost passes through to both price and volume rather than reflecting pricing power) — and pairs the number with a plain-language read. The declared-price grid surfaces the realised-vs-TP gap so a stale grid or deep discounting is visible. Coverage flags gate how far each conclusion can be trusted.
 
-## Demo data
-All figures are synthetic placeholders. Revenue, volume, prices and change values were randomized from the original patterns while preserving data structures, SKU counts and order of magnitude so every chart, table and KPI still renders. The company, brand and ERP identifiers are fictional.
+## 6. System Design
+One HTML document, no framework, no build: (a) a `<style>` block implementing the shared portfolio design tokens (dark-navy, data-dense), (b) an embedded dataset object (~800 KB, the bulk of the file), (c) vanilla JavaScript that computes derived series at load and builds every chart as string-assembled inline SVG (portfolio bar+line, breadth, price-journey, elasticity bars, scatter, gap bars, ladder) with a shared hover tooltip and sortable/searchable tables; tabs swap via display toggles. The file is delivered statically and self-contained on purpose: it survives email/archive, renders offline (fonts degrade to system fallback), needs no hosting dependency, and keeps the whole analytical method readable in plain text for audit.
 
-## How to run locally
-- Open `index.html` directly in a browser, **or**
-- Serve statically, e.g. `npx serve .` then visit the printed URL.
+## 7. Findings & Design Decisions
+The data story: the book spans ~1,000 SKUs with a long right tail of low-frequency lines; portfolio price direction alternates between broad raises and cuts, elasticity clusters into a meaningful elastic minority and a large inelastic block, and declared-price coverage is concentrated on a small share of SKUs — so the grid is honest about how many lines it can actually speak for. Key design decisions: **blue + amber accents only** (former teal/violet series colours mapped into the spec emerald/blue palette; a former `#4ade80`/`#f26d6d` semantic green/red set to the spec `--ok`/`--bad`); charts recoloured to the fixed spec palette with tooltips, legends and never colour-alone; KPI values and headings in a tabular monospace face against the sans body; a sticky top bar with an explicit **synthetic-data chip** (and the original "live extract" wording replaced), plus a footer carrying a methodology anchor and "Built by Abir"; 2 px card hover-lift and a single ≤450 ms load-in stagger, all disabled under `prefers-reduced-motion`. Chart colours are literal hexes in the SVG builders, so the restyle was a colour-literal swap, not a logic change.
 
-## Deploying to Vercel
-1. Push this folder to a Git repo.
-2. In Vercel, **Import repo** → framework preset: **Other**.
-3. Build command: leave blank; Output directory: leave as root (or `public`).
-4. Deploy — the static `index.html` is served as-is.
+## 8. Limitations & Validity
+All figures are **synthetic**; no SKU, price, declared grid or elasticity value describes a real company. Elasticity is a first-difference estimate on observed revenue-derived volume, not a causal demand curve — cost pass-through, promotions and stock-outs inflate or distort β, which is why positive (anomalous) readings are surfaced rather than suppressed. Declared DP/TP/MRP coverage is partial (only a fraction of SKUs carry an ERP price config), so the ladder and gap views speak to a subset, and the realised-vs-MRP unit check flags where the booked unit is unreliable. Item-level trade discounts are near the end of the window, and COGS is not in the extract. The cockpit is a decision-support and design artifact, not an audited report.
+
+## 9. Reproducibility & Deployment
+No dependencies to install: open `index.html` in any modern browser over `file://`, or serve statically with `npx serve .`. To deploy, import the folder into Vercel with the **Other** preset, leave the build command blank and the output directory as root — the static `index.html` is served as-is; there are no environment variables or backend. The `PROFILE`/`README` document the metric formulas and the method-and-coverage tab in the app carries the same caveats. Editing the charts' palette is safe via the hex literals in the SVG builders; the embedded dataset and computation logic should be treated as read-only to preserve functionality.
