@@ -1,3 +1,5 @@
+![Price Elasticity Cockpit](assets/banner.svg)
+
 # Nexa Essentials — Price & Volume History Cockpit
 
 A single-file, dependency-free analytics cockpit for a consumer/essentials business unit: every SKU sold since inception, with **realised price, volume and month-on-month change**, a **declared DP / TP / MRP** price grid, own-price **elasticity**, and a method-and-coverage section — all embedded as a JS data object and hand-rolled as inline SVG. No build, no server, no chart library; it opens straight from `file://`.
